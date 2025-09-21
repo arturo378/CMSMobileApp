@@ -42,16 +42,46 @@ const Login: React.FC = () => {
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar>
-          <IonTitle>Login Page</IonTitle>
+        <IonToolbar color="primary">
+          <IonTitle className="login-title">Welcome Back</IonTitle>
         </IonToolbar>
       </IonHeader>
-     <IonLoading message="Please wait.." duration={0} isOpen={busy}></IonLoading>
-      <IonContent className="ion-padding">
-          <IonInput placeholder="Username:" onIonChange={(e: any) => setUsername(e.target.value)} />
-          <IonInput type="password" placeholder="Password:" onIonChange={(e: any) => setPassword(e.target.value)} />
-          <IonButton onClick={login}>Login</IonButton>
-        
+      <IonLoading message="Please wait.." duration={0} isOpen={busy}></IonLoading>
+      <IonContent fullscreen className="login-content">
+        <div className="login-wrapper">
+          <div className="login-card">
+          <div className="login-avatar">
+            <img src="/assets/icon/icon.png" alt="App Icon" />
+          </div>
+          <h2 className="login-heading">Sign in to your account</h2>
+          <IonInput
+            className="login-input"
+            placeholder="Email"
+            type="email"
+            value={username}
+            onIonChange={(e: any) => setUsername(e.target.value)}
+            clearInput
+            debounce={300}
+            required
+          />
+          <IonInput
+            className="login-input"
+            type="password"
+            placeholder="Password"
+            value={password}
+            onIonChange={(e: any) => setPassword(e.target.value)}
+            clearInput
+            debounce={300}
+            required
+          />
+          <IonButton expand="block" shape="round" size="large" className="login-btn" onClick={login}>
+            Login
+          </IonButton>
+            <div className="login-links">
+              <span>Don't have an account? <Link to="/register">Register</Link></span>
+            </div>
+          </div>
+        </div>
       </IonContent>
     </IonPage>
   );
