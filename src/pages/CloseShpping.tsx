@@ -1,242 +1,159 @@
-import { 
-    IonContent, 
-    IonHeader, 
-    IonPage, 
-    IonTitle, 
-    IonToolbar, 
-    IonButton, 
-    IonButtons, 
-    IonList, 
-    IonItem, 
+import {
+  IonContent,
+  IonHeader,
+  IonPage,
+  IonTitle,
+  IonToolbar,
+  IonButton,
+  IonButtons,
+  IonList,
+  IonItem,
   IonLabel,
   IonGrid,
   IonRow,
   IonListHeader,
-  IonItemSliding, } from '@ionic/react';
-  import React, { useState, useEffect } from 'react';
-  import { useHistory } from 'react-router'
-  import fire from '../firebaseConfig';
-  import { Plugins } from '@capacitor/core';
+  IonItemSliding,
+} from '@ionic/react';
+import React, { useState, useEffect } from 'react';
+import { useHistory } from 'react-router';
+import { Plugins } from '@capacitor/core';
+import {
+  listByWarehouse,
+  updateQuantity,
+  createWarehouseChemical,
+} from '../api/warehouseChemicals';
+import { updateShippingPaper } from '../api/shipping';
+import { toast } from '../toast';
 
-  
-  
-  
-  
-  
-  
-  
-  const CloseShippingPaper: React.FC = () => {
-    
-    const [chem_list, setChemlist] = useState([{}])
-    const [ID, setID] = useState<string>();
-    const [document_id, setDocumentid] = useState<string>();
-    const [Origin, setOrigin] = useState<string>();
-    const [Destination, setDestination] = useState<string>();
-    const [warehouses, setWarehouses] = useState([''])
-    const [warehousechem_list, setWarehouseChemlist] = useState([{}])
+const { Storage } = Plugins;
 
-  
-    
-    const { Storage } = Plugins;
-   
-  
-  
-    console.log(chem_list)
-    
-  
-    const history = useHistory()
-  
-    function back(){
-      
-      history.replace('/dashboard')
-  }
-
-  function deletedata(){
-    Storage.clear();
-    back()
+interface CachedChem {
+  chemicalId: string;
+  name: string;
+  quantity: number;
 }
-  
-    useEffect(() => {
-      
-    let warehouse: any[] = [];
-   
-    let warehousechem: any[] = [];
-    //Get Warehouses
-    fire
-      .firestore()
-      .collection('assets').where('type', '==', 'warehouse')
-      .onSnapshot((snapshot) => {
-        const warehouse_list = snapshot.docs.map(((doc) => ({
-          id: doc.id,
-          ...doc.data()
-        })))
-        for (var key in warehouse_list) {
-          warehouse.push(warehouse_list[key])
-        }
-        setWarehouses(warehouse) 
-      })
 
-      fire
-      .firestore()
-      .collection('asset_data').where('type', '==', 'warehouse_chemical')
-      .onSnapshot((snapshot) => {
-        const warehousechem_list = snapshot.docs.map(((doc) => ({
-          id: doc.id,
-          ...doc.data()
-          
-        })))
-        for (var key in warehousechem_list) {
-          warehousechem.push(warehousechem_list[key])
-        }
-        setWarehouseChemlist(warehousechem) 
-      }) 
+interface CachedShippingPaper {
+  data: {
+    datanumber: string;
+    originwarehousenumber: string;
+    destinationwarehousenumber: string;
+    originWarehouseId: string;
+    destinationWarehouseId: string;
+    [k: string]: any;
+  };
+  chemicals: CachedChem[];
+  id: string;
+}
 
+const CloseShippingPaper: React.FC = () => {
+  const history = useHistory();
 
+  const [chem_list, setChemlist] = useState<CachedChem[]>([]);
+  const [paperId, setPaperId] = useState<string>('');
+  const [destinationWarehouseId, setDestinationWarehouseId] = useState<string>('');
+  const [dataNumber, setDataNumber] = useState<string>('');
+  const [origin, setOrigin] = useState<string>('');
+  const [destination, setDestination] = useState<string>('');
 
-
-        getItem();
-    }, [])
-
-    function submit(){
-
-      for(var x of chem_list){
-        const AddData: any = x;
-        for(var info of warehouses){
-          const warehouse: any = info;
-          if(warehouse.name === Destination){
-            for(var warehousechem of warehousechem_list){
-              const wchem: any = warehousechem;
-              if(warehouse.id === wchem.warehouseid && wchem.name === AddData.name ){
-              const newamount = parseInt(wchem.quantity)+parseInt(AddData.quantity)
-              fire 
-              .firestore()
-              .collection('asset_data').doc(wchem.id).update({
-                'quantity': newamount
-              })
-              .then(function(){
-                console.log('Warehouse Invetnory Updated')
-              })
-              .catch(function(error){
-                console.error("Error writing document: ", error);
-              })
-              }
-            }
-          }
-        }
-      }
-
-
-    
-
-
-      fire 
-      .firestore()
-      .collection('asset_data').doc(document_id).update({
-       
-        active: 1
-      })
-      .then(function(){
-        Storage.clear();
-        back()
-      })
-      .catch(function(error){
-        console.error("Error writing document: ", error);
-        
-      })
-        
-      
+  function back() {
+    history.replace('/dashboard');
   }
 
+  async function deletedata() {
+    await Storage.clear();
+    back();
+  }
 
-    async function getItem() {
-        const { value } = await Storage.get({ key: 'Shipping_paper' });
-        if(value){
-          
-          var info: any = JSON.parse(value)
-          setDocumentid(info.id)
-          
-          setChemlist(info.chemicals)
-       
-          setID(info.data.datanumber)
-          setDestination(info.data.destinationwarehousenumber)
-          setOrigin(info.data.originwarehousenumber)
+  async function getItem() {
+    const { value } = await Storage.get({ key: 'Shipping_paper' });
+    if (!value) return;
+    const info: CachedShippingPaper = JSON.parse(value);
+    setPaperId(info.id);
+    setDestinationWarehouseId(info.data.destinationWarehouseId);
+    setChemlist(info.chemicals);
+    setDataNumber(info.data.datanumber);
+    setDestination(info.data.destinationwarehousenumber);
+    setOrigin(info.data.originwarehousenumber);
+  }
+
+  useEffect(() => {
+    getItem();
+  }, []);
+
+  async function submit() {
+    if (!paperId || !destinationWarehouseId) {
+      toast('Cached shipping paper missing destination info');
+      return;
+    }
+    try {
+      const wcs = await listByWarehouse(destinationWarehouseId);
+      for (const item of chem_list) {
+        if (!item.quantity || item.quantity <= 0) continue;
+        const wc = wcs.find((w) => {
+          const wcChemId = typeof w.chemical === 'string' ? w.chemical : w.chemical._id;
+          return wcChemId === item.chemicalId;
+        });
+        if (wc) {
+          await updateQuantity(wc._id, wc.quantity + item.quantity);
+        } else {
+          await createWarehouseChemical(destinationWarehouseId, item.chemicalId, item.quantity);
         }
-        
-        
       }
-  
-  
-  
-    return (
-      <IonPage>
-        <IonHeader>
-          <IonToolbar>
-            <IonTitle>Close Shipping Paper</IonTitle>
-            <IonButtons onClick = {back} slot="end">Back</IonButtons>
-          </IonToolbar>
-        </IonHeader>
-        <IonContent className="ion-padding">
-  
-  
+
+      await updateShippingPaper(paperId, { active: 1 });
+      await Storage.clear();
+      back();
+    } catch (err) {
+      toast((err && (err as any).message) || 'Failed to close shipping paper');
+    }
+  }
+
+  return (
+    <IonPage>
+      <IonHeader>
+        <IonToolbar>
+          <IonTitle>Close Shipping Paper</IonTitle>
+          <IonButtons onClick={back} slot="end">Back</IonButtons>
+        </IonToolbar>
+      </IonHeader>
+      <IonContent className="ion-padding">
+
         <IonGrid>
-        <IonRow>
-        <IonList>
-            <IonItem>
-    <IonLabel>Data ID:  {ID}</IonLabel>
-            </IonItem>
-              <IonItem>
-    <IonLabel>Origin Warehouse: {Origin}</IonLabel>
-            </IonItem>
-            <IonItem>
-    <IonLabel>Destination Warehouse: {Destination}</IonLabel>
-            
-            </IonItem>
-            
-  
-            
+          <IonRow>
+            <IonList>
+              <IonItem><IonLabel>Data ID:  {dataNumber}</IonLabel></IonItem>
+              <IonItem><IonLabel>Origin Warehouse: {origin}</IonLabel></IonItem>
+              <IonItem><IonLabel>Destination Warehouse: {destination}</IonLabel></IonItem>
             </IonList>
-        </IonRow>
-  
-        <IonRow >
-  
-        <IonContent
-         style={{
-          height : '15em'}}
-        className="ion-padding"
-         scrollEvents={true}
-        onIonScrollStart={() => {}}
-        onIonScroll={() => {}}
-        onIonScrollEnd={() => {}}>
-  
-          <IonListHeader>
-            Chemicals
-          </IonListHeader>
-          <IonList>
-          
-          
-          { chem_list.filter((type: any) => type.name != undefined).map((info: any, index) => (
-                    <IonItemSliding>
-                   
-                    <IonLabel >{info.name}:  {info.quantity}</IonLabel>
-                    
-                  
-                    </IonItemSliding>
-                  ))}
-         
-         
-      </IonList>
-     
-        
-          </IonContent>
-       
-        </IonRow>
-        <IonRow> <IonButton color="primary" expand="full" onClick = {submit}>Close Shipping Paper</IonButton>
-      <IonButton color="danger" expand="full" onClick = {deletedata}>Clear Data</IonButton></IonRow>
+          </IonRow>
+
+          <IonRow>
+            <IonContent
+              style={{ height: '15em' }}
+              className="ion-padding"
+              scrollEvents={true}
+              onIonScrollStart={() => { }}
+              onIonScroll={() => { }}
+              onIonScrollEnd={() => { }}>
+              <IonListHeader>Chemicals</IonListHeader>
+              <IonList>
+                {chem_list.map((info, index) => (
+                  <IonItemSliding key={`${info.chemicalId}-${index}`}>
+                    <IonLabel>{info.name}:  {info.quantity}</IonLabel>
+                  </IonItemSliding>
+                ))}
+              </IonList>
+            </IonContent>
+          </IonRow>
+          <IonRow>
+            <IonButton color="primary" expand="full" onClick={submit}>Close Shipping Paper</IonButton>
+            <IonButton color="danger" expand="full" onClick={deletedata}>Clear Data</IonButton>
+          </IonRow>
         </IonGrid>
-        </IonContent>
-      </IonPage>
-    );
-  };
-  
-  export default CloseShippingPaper;
-  
+      </IonContent>
+    </IonPage>
+  );
+};
+
+export default CloseShippingPaper;

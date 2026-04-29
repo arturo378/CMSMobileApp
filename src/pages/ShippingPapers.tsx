@@ -1,376 +1,251 @@
-import { 
-  IonContent, 
-  IonHeader, 
-  IonPage, 
-  IonTitle, 
-  IonToolbar, 
-  IonButton, 
-  IonButtons, 
-  IonList, 
-  IonModal, 
-  IonItem, 
+import {
+  IonContent,
+  IonHeader,
+  IonPage,
+  IonTitle,
+  IonToolbar,
+  IonButton,
+  IonButtons,
+  IonList,
+  IonModal,
+  IonItem,
   IonInput,
-IonLabel,
-IonSelect,
-IonGrid,
-IonRow,
-IonSelectOption,
-IonListHeader,
-IonFabButton,
-IonItemSliding} from '@ionic/react';
+  IonLabel,
+  IonSelect,
+  IonGrid,
+  IonRow,
+  IonSelectOption,
+  IonListHeader,
+  IonFabButton,
+  IonItemSliding,
+} from '@ionic/react';
 import React, { useState, useEffect } from 'react';
-import { useHistory } from 'react-router'
-import fire, { getUserInfo } from '../firebaseConfig';
+import { useHistory } from 'react-router';
+import { useSelector } from 'react-redux';
 import { Plugins } from '@capacitor/core';
+import { listWarehouses } from '../api/warehouses';
+import { listChemicals } from '../api/chemicals';
+import { listByWarehouse, updateQuantity } from '../api/warehouseChemicals';
+import { createShippingPaper, addShippingChemical } from '../api/shipping';
+import { Warehouse, Chemical } from '../api/types';
+import { toast } from '../toast';
 
+const { Geolocation, Storage } = Plugins;
 
-
-
-
-
+interface ChemRow {
+  chemicalId: string;
+  name: string;
+  quantity: number;
+}
 
 const ShippingPapers: React.FC = () => {
-  const [warehouses, setWarehouses] = useState([''])
-  const [chem_list, setChemlist] = useState([{}])
-  const [warehousechem_list, setWarehouseChemlist] = useState([{}])
-  const [chemicals, setChemicals] = useState([''])
-  const [coordinates, setCoordinates] = useState({})
-  const { Geolocation } = Plugins;
-  const { Storage } = Plugins;
-  const [comment, setComment] = useState<string>();
-  const [gallons, setGallons] = useState<number>();
-  const [truck, setTruck] = useState<string>();
-  const [origin, setOrigin] = useState<string>();
-  const [chemical, setChemical] = useState<string>('');
-  const [destination, setDestination] = useState<string>();
+  const userId = useSelector((state: any) => state.user.id);
+  const history = useHistory();
+
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [chemicals, setChemicals] = useState<Chemical[]>([]);
+  const [chem_list, setChemlist] = useState<ChemRow[]>([]);
+
+  const [coordinates, setCoordinates] = useState<string>('');
+  const [comment, setComment] = useState<string>('');
+  const [gallons, setGallons] = useState<number>(0);
+  const [truck, setTruck] = useState<string>('');
+  const [originId, setOriginId] = useState<string>('');
+  const [destinationId, setDestinationId] = useState<string>('');
+  const [chemicalId, setChemicalId] = useState<string>('');
   const [showModal, setShowModal] = useState(false);
 
-  
-  
-
-  const history = useHistory()
-
-  function back(){
-    
-    history.replace('/dashboard')
-}
-
-function addchemical(){
-  setShowModal(true);
-}
-function removechemical(e: any, index: number){
-
-  let list = chem_list.filter(type => Object.keys(type).length != 0).map(obj => ({...obj}));
-
-  list.splice(index,1)
-  setChemlist(list)
-}
-
-
-function addchem(){
-
-// Create a new array based on current state
-  
-
-  let list = chem_list.map(obj => ({...obj}));
-var data = { 
-  name: chemical,
-  quantity: gallons
-};
-
-
-
-
-// Add item to it
-list.push(data);
-
-setChemlist(list)
-  setChemical('');
-  setGallons(0);
-  setShowModal(false);
-}
-
-
-  async function submit(){
-    var data = await getUserInfo();
-    if(data){
-      
-    fire 
-          .firestore()
-          .collection('asset_data').add({
-            "datanumber": "SP-" + Math.round((new Date().getTime() / 1000)),
-            "createdby": data.email,
-            "originwarehousenumber": origin,
-            "destinationwarehousenumber": destination,
-            "trucknumber": truck,
-            "date": new Date(),
-            "comments": comment,
-            "gps": coordinates,
-            "active": 0, 
-            type: "shipping_papers"
-          })
-          .then(ref => {
-            console.log(ref.id)
-            if(ref.id){
-              for(var x of chem_list){
-                const AddData: any = x;
-                for(var info of warehouses){
-                  const warehouse: any = info;
-                  if(warehouse.name === origin){
-                    for(var warehousechem of warehousechem_list){
-                      const wchem: any = warehousechem;
-                      if(warehouse.id === wchem.warehouseid && wchem.name === AddData.name ){
-                      const newamount = wchem.quantity-AddData.quantity
-                      fire 
-                      .firestore()
-                      .collection('asset_data').doc(wchem.id).update({
-                      
-                        'quantity': newamount
-                      })
-                      .then(function(){
-                        console.log('Warehouse Invetnory Updated')
-                      })
-                      .catch(function(error){
-                        console.error("Error writing document: ", error);
-                      })
-                      }
-                    }
-                  }
-                }
-                if(AddData.name && AddData.quantity){
-                  fire 
-                  .firestore()
-                  .collection('asset_data').add({
-                    "name": AddData.name,
-                    "quantity": AddData.quantity,
-                   "shippingid": ref.id,
-                   "type": "shipping_chemical"
-                  })
-                  .then(function(){
-                    console.log("Document successfully written!");
-                  })
-                  .catch(function(error){
-                    console.error("Error writing document: ", error);
-                  })
-                }
-              }
-              set('Shipping_paper', ref.id)
-            }
-            console.log("Document successfully written!");
-          })
-          .catch(function(error){
-            console.error("Error writing document: ", error);
-          })
-
-        }
-
-    
+  function back() {
+    history.replace('/dashboard');
   }
 
+  function addchemical() {
+    setShowModal(true);
+  }
 
+  function removechemical(_e: any, index: number) {
+    const list = chem_list.slice();
+    list.splice(index, 1);
+    setChemlist(list);
+  }
 
-   async function set(key: string, value: any): Promise<void> {
-     let total ={
-       data: {"datanumber": "SP-" + Math.round((new Date().getTime() / 1000)),
-       "originwarehousenumber": origin,
-       "destinationwarehousenumber": destination,
-       "trucknumber": truck,
-       "date": new Date(),
-       "comments": comment,
-       "gps": coordinates,
-       type: "shipping_papers"},
-       chemicals: chem_list,
-       id: value
-     }
-    await Storage.set({
-      key: key,
-      value: JSON.stringify(total)
-    });
-    history.replace('/dashboard')
+  function addchem() {
+    const c = chemicals.find((x) => x._id === chemicalId);
+    if (!c || !gallons) return;
+    setChemlist([...chem_list, { chemicalId: c._id, name: c.tradename, quantity: gallons }]);
+    setChemicalId('');
+    setGallons(0);
+    setShowModal(false);
   }
 
   async function getCurrentPosition() {
-    const coordinates = await Geolocation.getCurrentPosition();
-    var lat = coordinates.coords.latitude;
-    var long = coordinates.coords.longitude;
-    setCoordinates(lat + ','+ long)
-    
+    try {
+      const pos = await Geolocation.getCurrentPosition();
+      setCoordinates(`${pos.coords.latitude},${pos.coords.longitude}`);
+    } catch {
+      // Geolocation can fail in browsers without permission; leave empty.
+    }
   }
 
+  async function submit() {
+    if (!userId) {
+      toast('Not signed in');
+      return;
+    }
+    const originW = warehouses.find((w) => w._id === originId);
+    const destW = warehouses.find((w) => w._id === destinationId);
+    if (!originW || !destW) {
+      toast('Pick origin and destination warehouses');
+      return;
+    }
+    if (chem_list.length === 0) {
+      toast('Add at least one chemical');
+      return;
+    }
+
+    try {
+      const paper = await createShippingPaper({
+        createdBy: userId,
+        originwarehousenumber: originW.name,
+        destinationwarehousenumber: destW.name,
+        trucknumber: truck,
+        date: new Date().toISOString(),
+        comments: comment,
+        gps: coordinates,
+        active: 0,
+      });
+
+      const wcs = await listByWarehouse(originId);
+      for (const item of chem_list) {
+        const wc = wcs.find((w) => {
+          const wcChemId = typeof w.chemical === 'string' ? w.chemical : w.chemical._id;
+          return wcChemId === item.chemicalId;
+        });
+        if (wc) {
+          const newQty = Math.max(0, wc.quantity - item.quantity);
+          await updateQuantity(wc._id, newQty);
+        }
+        await addShippingChemical(paper._id, item.chemicalId, item.quantity);
+      }
+
+      const cache = {
+        data: {
+          datanumber: paper.datanumber,
+          originwarehousenumber: originW.name,
+          destinationwarehousenumber: destW.name,
+          originWarehouseId: originId,
+          destinationWarehouseId: destinationId,
+          trucknumber: truck,
+          date: paper.date,
+          comments: comment,
+          gps: coordinates,
+        },
+        chemicals: chem_list,
+        id: paper._id,
+      };
+      await Storage.set({ key: 'Shipping_paper', value: JSON.stringify(cache) });
+      history.replace('/dashboard');
+    } catch (err) {
+      toast((err && (err as any).message) || 'Failed to create shipping paper');
+    }
+  }
 
   useEffect(() => {
     getCurrentPosition();
-    let warehouse: any[] = [];
-    let chemical: any[] = [];
-    let warehousechem: any[] = [];
-    //Get Warehouses
-    fire
-      .firestore()
-      .collection('assets').where('type', '==', 'warehouse')
-      .onSnapshot((snapshot) => {
-        const warehouse_list = snapshot.docs.map(((doc) => ({
-          id: doc.id,
-          ...doc.data()
-        })))
-        for (var key in warehouse_list) {
-          warehouse.push(warehouse_list[key])
-        }
-        setWarehouses(warehouse) 
+    Promise.all([listWarehouses(), listChemicals()])
+      .then(([w, c]) => {
+        setWarehouses(w);
+        setChemicals(c);
       })
-
-      fire
-      .firestore()
-      .collection('asset_data').where('type', '==', 'warehouse_chemical')
-      .onSnapshot((snapshot) => {
-        const warehousechem_list = snapshot.docs.map(((doc) => ({
-          id: doc.id,
-          ...doc.data()
-          
-        })))
-        console.log(warehousechem_list)
-        for (var key in warehousechem_list) {
-          warehousechem.push(warehousechem_list[key])
-        }
-        setWarehouseChemlist(warehousechem) 
-      }) 
-
-
-
-
-
-      // Get Chemicals
-      fire
-      .firestore()
-      .collection('assets').where('type', '==', 'chemical')
-      .onSnapshot((snapshot) => {
-        const chemical_list = snapshot.docs.map(((doc) => ({
-          id: doc.id,
-          ...doc.data()
-        })))
-        for (var key in chemical_list) {
-          chemical.push(chemical_list[key])
-        }
-        setChemicals(chemical)
-      })
-
-  }, [])
-
-
+      .catch((err) => toast((err && err.message) || 'Failed to load data'));
+  }, []);
 
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
           <IonTitle>Shipping Paper</IonTitle>
-          <IonButtons onClick = {back} slot="end">Back</IonButtons>
+          <IonButtons onClick={back} slot="end">Back</IonButtons>
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
 
+        <IonGrid>
+          <IonRow>
+            <IonList>
+              <IonItem>
+                <IonLabel>Origin Warehouse</IonLabel>
+                <IonSelect value={originId} placeholder="Select One" onIonChange={e => setOriginId(e.detail.value)}>
+                  {warehouses.map((info) => (
+                    <IonSelectOption key={info._id} value={info._id}>{info.warehousenumber}  {info.name}</IonSelectOption>
+                  ))}
+                </IonSelect>
+              </IonItem>
+              <IonItem>
+                <IonLabel>Destination Warehouse</IonLabel>
+                <IonSelect value={destinationId} placeholder="Select One" onIonChange={e => setDestinationId(e.detail.value)}>
+                  {warehouses.map((info) => (
+                    <IonSelectOption key={info._id} value={info._id}>{info.warehousenumber}  {info.name}</IonSelectOption>
+                  ))}
+                </IonSelect>
+              </IonItem>
+              <IonItem>
+                <IonInput value={truck} placeholder="Truck Number" onIonChange={e => setTruck(e.detail.value!)}></IonInput>
+              </IonItem>
+              <IonItem>
+                <IonInput value={comment} placeholder="Comments" onIonChange={e => setComment(e.detail.value!)}></IonInput>
+              </IonItem>
+            </IonList>
+          </IonRow>
 
-      <IonGrid>
-      <IonRow>
-      <IonList>
-            <IonItem>
-            <IonLabel>Origin Warehouse</IonLabel>
-            <IonSelect value={origin} placeholder="Select One" onIonChange={e => setOrigin(e.detail.value)}>
-            { warehouses.map((info: any) => (
-                  <IonSelectOption key={info.id} value={info.name}>{info.warehousenumber}  {info.name}</IonSelectOption>
-                ))}
-            </IonSelect>
-          </IonItem>
-          <IonItem>
-            <IonLabel>Destination Warehouse</IonLabel>
-            <IonSelect value={destination} placeholder="Select One" onIonChange={e => setDestination(e.detail.value)}>
-            { warehouses.map((info: any) => (
-                  <IonSelectOption key={info.id} value={info.name}>{info.warehousenumber}  {info.name}</IonSelectOption>
-                ))}
-            </IonSelect>
-          </IonItem>
-          <IonItem>
-            <IonInput value={truck} placeholder="Truck Number" onIonChange={e => setTruck(e.detail.value!)}></IonInput>
-          </IonItem>
-          <IonItem>
-            <IonInput value={comment} placeholder="Comments" onIonChange={e => setComment(e.detail.value!)}></IonInput>
-          </IonItem>
-
-          
-          </IonList>
-      </IonRow>
-
-      <IonRow >
-
-      <IonContent
-       style={{
-        height : '15em'}}
-      className="ion-padding"
-       scrollEvents={true}
-      onIonScrollStart={() => {}}
-      onIonScroll={() => {}}
-      onIonScrollEnd={() => {}}>
-
-        <IonListHeader>
-          Chemicals
-        </IonListHeader>
-        <IonList>
-        
-        
-        { chem_list.filter(type => Object.keys(type).length != 0).map((info: any, index) => (
-                  <IonItemSliding>
-                  <IonItem type ='button' onClick={e => removechemical(info, index)}>
-                  <IonLabel >{info.name}:  {info.quantity}</IonLabel>
-                  
-                  </IonItem>
+          <IonRow>
+            <IonContent
+              style={{ height: '15em' }}
+              className="ion-padding"
+              scrollEvents={true}
+              onIonScrollStart={() => { }}
+              onIonScroll={() => { }}
+              onIonScrollEnd={() => { }}>
+              <IonListHeader>Chemicals</IonListHeader>
+              <IonList>
+                {chem_list.map((info, index) => (
+                  <IonItemSliding key={`${info.chemicalId}-${index}`}>
+                    <IonItem type='button' onClick={e => removechemical(info, index)}>
+                      <IonLabel>{info.name}:  {info.quantity}</IonLabel>
+                    </IonItem>
                   </IonItemSliding>
                 ))}
-       
-       
-    </IonList>
-      
-        </IonContent>
-     
-      </IonRow>
+              </IonList>
+            </IonContent>
+          </IonRow>
 
-      <IonRow>
-      <IonFabButton size="small" color="danger" onClick = {addchemical}>+</IonFabButton>
-      </IonRow>
-      <IonRow>
-      <IonButton  color="primary" expand="full" onClick = {submit}>Submit</IonButton>
-      </IonRow>
-      </IonGrid>
+          <IonRow>
+            <IonFabButton size="small" color="danger" onClick={addchemical}>+</IonFabButton>
+          </IonRow>
+          <IonRow>
+            <IonButton color="primary" expand="full" onClick={submit}>Submit</IonButton>
+          </IonRow>
+        </IonGrid>
 
-
-
-
-      
-      {/* <IonButtons onClick = {submit} >Submit Data</IonButtons> */}
-        
-      <IonModal isOpen={showModal} cssClass='my-custom-class'>
-      <IonGrid>
-      <IonRow>
-      <IonLabel>Add Chemical:</IonLabel>
-      <IonSelect value={chemical} placeholder="Select One" onIonChange={e => setChemical(e.detail.value)}>
-            { chemicals.map((info: any) => (
-                  <IonSelectOption key={info.id} value={info.tradename}>{info.tradename}</IonSelectOption>
+        <IonModal isOpen={showModal} cssClass='my-custom-class'>
+          <IonGrid>
+            <IonRow>
+              <IonLabel>Add Chemical:</IonLabel>
+              <IonSelect value={chemicalId} placeholder="Select One" onIonChange={e => setChemicalId(e.detail.value)}>
+                {chemicals.map((info) => (
+                  <IonSelectOption key={info._id} value={info._id}>{info.tradename}</IonSelectOption>
                 ))}
-            </IonSelect>
-      </IonRow>
-      <IonRow>
-
-
-      <IonLabel>Enter Gallons:</IonLabel>
-      
-          <IonItem>
-            <IonInput type="number" value={gallons} placeholder="Enter Number" onIonChange={e => setGallons(parseInt(e.detail.value!, 10))}></IonInput>
-          </IonItem>
-      </IonRow>
-      </IonGrid>
-
-
-    
-          
-        <IonButton onClick={addchem}>Add Chemical</IonButton>
-      </IonModal>
+              </IonSelect>
+            </IonRow>
+            <IonRow>
+              <IonLabel>Enter Gallons:</IonLabel>
+              <IonItem>
+                <IonInput type="number" value={gallons} placeholder="Enter Number" onIonChange={e => setGallons(parseInt(e.detail.value!, 10))}></IonInput>
+              </IonItem>
+            </IonRow>
+          </IonGrid>
+          <IonButton onClick={addchem}>Add Chemical</IonButton>
+        </IonModal>
       </IonContent>
     </IonPage>
   );

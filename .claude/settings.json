@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/Arturo Madrid/Documents/Projects/CMSBackend/src/middleware/**)",
+      "Read(//c/Users/Arturo Madrid/Documents/Projects/CMSBackend//**)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3001/health)",
+      "Bash(curl -s -X POST http://localhost:3001/api/auth/login -H \"Content-Type: application/json\" -d '{\"email\":\"nope@nope.com\",\"password\":\"x\"}' -i)",
+      "Bash(curl -s -X OPTIONS http://localhost:3001/api/auth/login -H \"Origin: http://localhost:8100\" -H \"Access-Control-Request-Method: POST\" -i)",
+      "Bash(netstat -ano)",
+      "Bash(npm run *)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\Arturo Madrid\\Documents\\Projects\\CMSBackend\\src\\controllers",
+      "c:\\Users\\Arturo Madrid\\Documents\\Projects\\CMSBackend\\src",
+      "c:\\Users\\Arturo Madrid\\Documents\\Projects\\CMSBackend"
+    ]
+  }
+}

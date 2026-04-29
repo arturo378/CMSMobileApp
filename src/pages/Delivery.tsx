@@ -1,15 +1,15 @@
-import { 
-    IonContent, 
-    IonHeader, 
-    IonPage, 
-    IonTitle, 
-    IonToolbar, 
-    IonButton, 
-    IonButtons, 
-    IonList, 
-    IonModal, 
-    IonItem, 
-    IonInput,
+import {
+  IonContent,
+  IonHeader,
+  IonPage,
+  IonTitle,
+  IonToolbar,
+  IonButton,
+  IonButtons,
+  IonList,
+  IonModal,
+  IonItem,
+  IonInput,
   IonLabel,
   IonSelect,
   IonGrid,
@@ -17,439 +17,285 @@ import {
   IonSelectOption,
   IonListHeader,
   IonFabButton,
-  IonItemSliding } from '@ionic/react';
-  import React, { useState, useEffect } from 'react';
-  import { useHistory } from 'react-router'
-  import fire, { getUserInfo } from '../firebaseConfig';
-  import { Plugins } from '@capacitor/core';
-  
-  
-  
-  
-  
-  
-  
-  
-  const Delivery: React.FC = () => {
-    const [CLW, setCLW] = useState([])
-   
-   
-    
-    const [coordinates, setCoordinates] = useState({})
-    const { Geolocation } = Plugins;
-    const { Storage } = Plugins;
-    const [comment, setComment] = useState<string>();
-    const [company, setCompany] = useState<string>();
-    const [companyname, setCompanyname] = useState<string>();
-    const [leasename, setLeasename] = useState<string>();
-    const [wellname, setWellname] = useState<string>();
-    const [companyid, setCompanyid] = useState<string>();
-    const [chemicals, setChemicals] = useState(['']) //from storage
-    const [delverychems, setDeliveryChems] = useState([{}]) //list to be submitted
-    const [lease, setLease] = useState<string>();
-    const [leaseid, setLeaseid] = useState<string>();
-    const [well, setWell] = useState<string>();
-    const [chemical, setChemical] = useState<string>();
-    const [showModal, setShowModal] = useState(false);
-    const [gallons, setGallons] = useState<number>(0);
+  IonItemSliding,
+} from '@ionic/react';
+import React, { useState, useEffect } from 'react';
+import { useHistory } from 'react-router';
+import { useSelector } from 'react-redux';
+import { Plugins } from '@capacitor/core';
+import { listCompanies } from '../api/companies';
+import { listLeases } from '../api/leases';
+import { listWells } from '../api/wells';
+import { createDelivery, addDeliveryChemical } from '../api/deliveries';
+import { Company, Lease, Well } from '../api/types';
+import { toast } from '../toast';
 
-    
+const { Geolocation, Storage } = Plugins;
 
+interface CachedChem {
+  chemicalId: string;
+  name: string;
+  quantity: number;
+}
 
-  
-   
+interface DeliveryChem {
+  chemicalId: string;
+  name: string;
+  quantity: number;
+}
 
-    function removechemical(e: any, index: number){
+interface CachedShippingPaper {
+  data: any;
+  chemicals: CachedChem[];
+  id: string;
+}
 
-      let list = delverychems.filter(type => Object.keys(type).length != 0).map(obj => ({...obj}));
-    
-      list.splice(index,1)
-      setDeliveryChems(list)
-    }
+const Delivery: React.FC = () => {
+  const userId = useSelector((state: any) => state.user.id);
+  const history = useHistory();
 
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [leases, setLeases] = useState<Lease[]>([]);
+  const [wells, setWells] = useState<Well[]>([]);
 
-    async function getItem(key: String) {
+  const [companyId, setCompanyId] = useState<string>('');
+  const [leaseId, setLeaseId] = useState<string>('');
+  const [wellId, setWellId] = useState<string>('');
 
-    
-      const  {value}  = await Storage.get({ key: 'Shipping_paper' });
+  const [coordinates, setCoordinates] = useState<string>('');
+  const [comment, setComment] = useState<string>('');
+  const [chemicals, setChemicals] = useState<CachedChem[]>([]);
+  const [delverychems, setDeliveryChems] = useState<DeliveryChem[]>([]);
+  const [chemicalId, setChemicalId] = useState<string>('');
+  const [showModal, setShowModal] = useState(false);
+  const [gallons, setGallons] = useState<number>(0);
 
-      if(key == "first"){
-        var chemlist= []
-          if(value){
-       var data = JSON.parse(value)
-       console.log(data)
-        setChemicals(data.chemicals) 
-      }
-      }else{
-        if(value){
-          var data = JSON.parse(value)
-          return data;
-        } 
-      }  
-    }
-
-    const history = useHistory()
-  
-    function back(){
-      
-      history.replace('/dashboard')
+  function back() {
+    history.replace('/dashboard');
   }
-  
-  function addchemical(){
+
+  function addchemical() {
     setShowModal(true);
   }
 
-  function setcompanyid(data: any){
-    if(data.detail.value.id){
-      setCompany(data.detail.value);
-      setCompanyname(data.detail.value.name);
-      setCompanyid(data.detail.value.id);
-    }
-    
-   
+  function removechemical(_e: any, index: number) {
+    const list = delverychems.slice();
+    list.splice(index, 1);
+    setDeliveryChems(list);
   }
 
-
-  function setleaseid(data: any){
-    if(data.detail.value.id){
-      setLease(data.detail.value);
-      setLeaseid(data.detail.value.id);
-      setLeasename(data.detail.value.name);
+  async function loadCachedShipping() {
+    const { value } = await Storage.get({ key: 'Shipping_paper' });
+    if (value) {
+      const cached: CachedShippingPaper = JSON.parse(value);
+      setChemicals(cached.chemicals);
     }
-
   }
 
-    function setwellid(data: any){
-      if(data.detail.value.id){
-        setWell(data.detail.value);
-      
-        setWellname(data.detail.value.name);
-      }
-    
-   
+  async function getCachedShipping(): Promise<CachedShippingPaper | null> {
+    const { value } = await Storage.get({ key: 'Shipping_paper' });
+    return value ? JSON.parse(value) : null;
   }
 
+  function addchem() {
+    if (!chemicalId || !gallons) return;
+    const onTruck = chemicals.find((c) => c.chemicalId === chemicalId);
+    if (!onTruck) {
+      toast('Chemical not on the truck');
+      return;
+    }
+    if (delverychems.find((d) => d.chemicalId === chemicalId)) {
+      toast('Chemical already on the list');
+      return;
+    }
+    if (gallons > onTruck.quantity) {
+      toast(`Quantity must be less than ${onTruck.quantity}`);
+      return;
+    }
+    setDeliveryChems([...delverychems, { chemicalId, name: onTruck.name, quantity: gallons }]);
+    setChemicalId('');
+    setGallons(0);
+    setShowModal(false);
+  }
 
-  function addchem(){
+  async function getCurrentPosition() {
+    try {
+      const pos = await Geolocation.getCurrentPosition();
+      setCoordinates(`${pos.coords.latitude},${pos.coords.longitude}`);
+    } catch {
+      // Geolocation may be denied; leave empty.
+    }
+  }
 
-    delverychems.map(function(key:any, val2){
+  async function submit() {
+    if (!userId) {
+      toast('Not signed in');
+      return;
+    }
+    if (!companyId || !leaseId || !wellId) {
+      toast('Pick company, lease, and well');
+      return;
+    }
+    if (delverychems.length === 0) {
+      toast('Add at least one chemical');
+      return;
+    }
 
-      if(key.name == chemical){
-        alert("Chemical already on the list!")
+    try {
+      const delivery = await createDelivery({
+        company: companyId,
+        lease: leaseId,
+        well: wellId,
+        createdBy: userId,
+        gps: coordinates,
+        comments: comment,
+        date: new Date().toISOString(),
+        active: 0,
+      });
 
+      for (const item of delverychems) {
+        await addDeliveryChemical(delivery._id, item.chemicalId, item.quantity);
       }
 
-
-    })
-
-    chemicals.map(function(val: any){
-      if(val.name == chemical){
-        if(val.quantity<gallons){
-          alert("Pease Enter quantity less than:"+ val.quantity )
-        }else{
-
-          let list = delverychems.map(obj => ({...obj}));
-            var data = { 
-              name: chemical,
-              quantity: gallons
-            };
-
-
-          list.push(data);
-
-          setDeliveryChems(list)
-            setChemical('');
-            setGallons(0);
-            setShowModal(false);
-
-
-
-        }
+      const cached = await getCachedShipping();
+      if (cached) {
+        const updated: CachedChem[] = cached.chemicals.map((c) => {
+          const delivered = delverychems.find((d) => d.chemicalId === c.chemicalId);
+          return delivered ? { ...c, quantity: c.quantity - delivered.quantity } : c;
+        });
+        cached.chemicals = updated;
+        await Storage.set({ key: 'Shipping_paper', value: JSON.stringify(cached) });
       }
-    })
-
-    
+      history.replace('/dashboard');
+    } catch (err) {
+      toast((err && (err as any).message) || 'Failed to submit delivery');
     }
+  }
 
+  useEffect(() => {
+    loadCachedShipping();
+    getCurrentPosition();
+    listCompanies()
+      .then(setCompanies)
+      .catch((err) => toast((err && err.message) || 'Failed to load companies'));
+  }, []);
 
-  
-  
-    async function submit(){
-      var data = await getUserInfo();
-      let updatedlist: any = [];
-      let newgallons: any;
-        chemicals.map(function(key:any, val){
-          updatedlist.push(key)
-          delverychems.map(function(key2:any, val2){
-            if(key.name == key2.name){
-              newgallons = key.quantity-key2.quantity;
-              updatedlist[val].quantity= newgallons;
-            }
-          })
-      })
-              if(data){
-                fire 
-                .firestore()
-                .collection('asset_data').add({
-                  "company": companyname,
-                  "companyid": companyid,
-                  "lease": leasename,
-                  "well": wellname,
-                  "gps": coordinates,
-                  "comments": comment,
-                  "datanumber": "D-" + Math.round((new Date().getTime() / 1000)),
-                  "createdBy": data.email,
-                  "date": new Date(),
-                  type: "delivery",
-                  "active": 0
-                })
-                .then(ref => {
-                  console.log(ref.id)
-                  if(ref.id){
-                    for(var x of delverychems){
-                      const AddData: any = x;
-                      if(AddData.name && AddData.quantity){
-                        fire 
-                        .firestore()
-                        .collection('asset_data').add({
-                          "name": AddData.name,
-                          "quantity": AddData.quantity,
-                         "deliveryid": ref.id,
-                         "type": "delivery_chemical"
-                        })
-                        .then(function(){
-                          console.log("Document successfully written!");
-                        })
-                        .catch(function(error){
-                          console.error("Error writing document: ", error);
-                        })
-                      }
-                    }
-                     set('Shipping_paper')
-                  }
-                  
-      
-      
-      
-      
-                  console.log("Document successfully written!");
-                })
+  useEffect(() => {
+    setLeases([]);
+    setWells([]);
+    setLeaseId('');
+    setWellId('');
+    if (!companyId) return;
+    listLeases(companyId)
+      .then(setLeases)
+      .catch((err) => toast((err && err.message) || 'Failed to load leases'));
+  }, [companyId]);
 
-                .catch(function(error){
-                  console.error("Error writing document: ", error);
-                
-                })
-              }
-                    
+  useEffect(() => {
+    setWells([]);
+    setWellId('');
+    if (!leaseId) return;
+    listWells(leaseId)
+      .then(setWells)
+      .catch((err) => toast((err && err.message) || 'Failed to load wells'));
+  }, [leaseId]);
 
-              async function set(key: string): Promise<void> {
+  return (
+    <IonPage>
+      <IonHeader>
+        <IonToolbar>
+          <IonTitle>Delivery</IonTitle>
+          <IonButtons onClick={back} slot="end">Back</IonButtons>
+        </IonToolbar>
+      </IonHeader>
+      <IonContent className="ion-padding" fullscreen>
 
-                var info = await getItem("get");
-      
-                
-              info.chemicals =  updatedlist;
-               if(info){
-
-              
-               await Storage.set({
-                 key: key,
-                 value: JSON.stringify(info)
-               });
-                }
-               history.replace('/dashboard')
-             }
-
-             
-
-
-
-
-      console.log(updatedlist)
-    }
-
-    async function submit2(){
-      var info = await getItem("get");
-
-      console.log(info)
-
-      
-
-    }
-  
-  
-  
-     
-    async function getCurrentPosition() {
-      const coordinates = await Geolocation.getCurrentPosition();
-      var lat = coordinates.coords.latitude;
-      var long = coordinates.coords.longitude;
-      setCoordinates(lat + ','+ long)
-      
-    }
-  
-  
-    useEffect(() => {
-      getItem("first");
-      var info: any = [];
-      getCurrentPosition();
-      fire
-        .firestore()
-        .collection('assets').where('type', 'in', ['company', 'lease', 'well'])
-        .onSnapshot((snapshot) => {
-          const companies = snapshot.docs.map(((doc) => ({
-            id: doc.id,
-            ...doc.data()
-          })))
-          
-          for (var key in companies) {
-            info.push(companies[key]);
-          }
-          setCLW(info)
-
-        })
-     
-  
-    }, [])
-  
-  
-  
-    return (
-      <IonPage>
-        <IonHeader>
-          <IonToolbar>
-            <IonTitle>Delivery</IonTitle>
-            <IonButtons onClick = {back} slot="end">Back</IonButtons>
-          </IonToolbar>
-        </IonHeader>
-        <IonContent className="ion-padding" fullscreen>
-  
-  
         <IonGrid>
-        <IonRow>
-        <IonList>
-        <IonItem>
-            <IonLabel>Company:</IonLabel>
-            <IonSelect value={company} okText="Okay" cancelText="Dismiss" onIonChange={e => setcompanyid(e)}>
-            {CLW.filter((type: any) => type.type == 'company').map((data: any) => (
-                <IonSelectOption key={data.id} value={data}>
-                  {data.name}
-                </IonSelectOption>
-              ))}
-            </IonSelect>
-          </IonItem>
-
-          <IonItem>
-            <IonLabel>Lease:</IonLabel>
-            <IonSelect value={lease} okText="Okay" cancelText="Dismiss" onIonChange={e => setleaseid(e)}> 
-            {CLW.filter((type: any) => type.company == companyid).map((data: any) => (
-                <IonSelectOption key={data.id} value={data} >
-                  {data.name}
-                </IonSelectOption>
-              ))}
-            </IonSelect>
-          </IonItem>
-
-          <IonItem>
-            <IonLabel>Well:</IonLabel>
-            <IonSelect value={well} okText="Okay" cancelText="Dismiss" onIonChange={e => setwellid(e)}> 
-            {CLW.filter((type: any) => type.lease == leaseid).map((data: any) => (
-                <IonSelectOption key={data.id} value={data} >
-                  {data.name}
-                </IonSelectOption>
-              ))}
-            </IonSelect>
-          </IonItem>
-
-          <IonItem>
-            <IonInput value={comment} placeholder="Comments" onIonChange={e => setComment(e.detail.value!)}></IonInput>
-          </IonItem>
-           
-            
-            </IonList>
-        </IonRow>
-
-        
-  
-        
-        </IonGrid>
-
-        <IonRow>
-        <IonContent
-       style={{
-        height : '15em'}}
-      className="ion-padding"
-       scrollEvents={true}
-      onIonScrollStart={() => {}}
-      onIonScroll={() => {}}
-      onIonScrollEnd={() => {}}>
-
-        <IonListHeader>
-          Chemicals
-        </IonListHeader>
-        <IonList>
-        
-        
-        { delverychems.filter(type => Object.keys(type).length != 0).map((info: any, index) => (
-                  <IonItemSliding>
-                  <IonItem type ='button' onClick={e => removechemical(info, index)}>
-                  <IonLabel >{info.name}:  {info.quantity}</IonLabel>
-                  
-                  </IonItem>
-                  </IonItemSliding>
-                ))}
-       
-       
-    </IonList>
-    </IonContent>
-        </IonRow>
-        <IonRow>
-        <IonFabButton size="small" color="danger" onClick = {addchemical}>+</IonFabButton>
-        </IonRow>
-
-        <IonRow>
-        <IonButton color="primary" expand="full" onClick = {submit}>Submit Deliveries</IonButton>
-        </IonRow>
-
-        <IonRow>
-        {/* <IonButton color="primary" expand="full" onClick = {submit2}>Submit Deliveries</IonButton> */}
-        </IonRow>
-  
-  
-  
-  
-        
-        {/* <IonButtons onClick = {submit} >Submit Data</IonButtons> */}
-          
-        <IonModal isOpen={showModal} cssClass='my-custom-class'>
-        <IonGrid>
-        <IonRow>
-        <IonLabel>Chemical:</IonLabel>
-        <IonSelect value={chemical} placeholder="Select One" onIonChange={e => setChemical(e.detail.value)}>
-              { chemicals.filter(type => Object.keys(type).length != 0).map((info: any) => (
-                    <IonSelectOption key={info.id} value={info.name}>{info.name}</IonSelectOption>
+          <IonRow>
+            <IonList>
+              <IonItem>
+                <IonLabel>Company:</IonLabel>
+                <IonSelect value={companyId} okText="Okay" cancelText="Dismiss" onIonChange={e => setCompanyId(e.detail.value)}>
+                  {companies.map((data) => (
+                    <IonSelectOption key={data._id} value={data._id}>{data.name}</IonSelectOption>
                   ))}
-              </IonSelect>
+                </IonSelect>
+              </IonItem>
+
+              <IonItem>
+                <IonLabel>Lease:</IonLabel>
+                <IonSelect value={leaseId} okText="Okay" cancelText="Dismiss" onIonChange={e => setLeaseId(e.detail.value)}>
+                  {leases.map((data) => (
+                    <IonSelectOption key={data._id} value={data._id}>{data.name}</IonSelectOption>
+                  ))}
+                </IonSelect>
+              </IonItem>
+
+              <IonItem>
+                <IonLabel>Well:</IonLabel>
+                <IonSelect value={wellId} okText="Okay" cancelText="Dismiss" onIonChange={e => setWellId(e.detail.value)}>
+                  {wells.map((data) => (
+                    <IonSelectOption key={data._id} value={data._id}>{data.name}</IonSelectOption>
+                  ))}
+                </IonSelect>
+              </IonItem>
+
+              <IonItem>
+                <IonInput value={comment} placeholder="Comments" onIonChange={e => setComment(e.detail.value!)}></IonInput>
+              </IonItem>
+            </IonList>
+          </IonRow>
+        </IonGrid>
+
+        <IonRow>
+          <IonContent
+            style={{ height: '15em' }}
+            className="ion-padding"
+            scrollEvents={true}
+            onIonScrollStart={() => { }}
+            onIonScroll={() => { }}
+            onIonScrollEnd={() => { }}>
+            <IonListHeader>Chemicals</IonListHeader>
+            <IonList>
+              {delverychems.map((info, index) => (
+                <IonItemSliding key={`${info.chemicalId}-${index}`}>
+                  <IonItem type='button' onClick={e => removechemical(info, index)}>
+                    <IonLabel>{info.name}:  {info.quantity}</IonLabel>
+                  </IonItem>
+                </IonItemSliding>
+              ))}
+            </IonList>
+          </IonContent>
         </IonRow>
         <IonRow>
-  
-  
-        <IonLabel>Enter Gallons:</IonLabel>
-        
-            <IonItem>
-              <IonInput type="number" value={gallons} placeholder="Enter Number" onIonChange={e => setGallons(parseInt(e.detail.value!, 10))}></IonInput>
-            </IonItem>
+          <IonFabButton size="small" color="danger" onClick={addchemical}>+</IonFabButton>
         </IonRow>
-        </IonGrid>
-  
-  
-      
-            
+        <IonRow>
+          <IonButton color="primary" expand="full" onClick={submit}>Submit Deliveries</IonButton>
+        </IonRow>
+
+        <IonModal isOpen={showModal} cssClass='my-custom-class'>
+          <IonGrid>
+            <IonRow>
+              <IonLabel>Chemical:</IonLabel>
+              <IonSelect value={chemicalId} placeholder="Select One" onIonChange={e => setChemicalId(e.detail.value)}>
+                {chemicals.map((info) => (
+                  <IonSelectOption key={info.chemicalId} value={info.chemicalId}>{info.name}</IonSelectOption>
+                ))}
+              </IonSelect>
+            </IonRow>
+            <IonRow>
+              <IonLabel>Enter Gallons:</IonLabel>
+              <IonItem>
+                <IonInput type="number" value={gallons} placeholder="Enter Number" onIonChange={e => setGallons(parseInt(e.detail.value!, 10))}></IonInput>
+              </IonItem>
+            </IonRow>
+          </IonGrid>
           <IonButton onClick={addchem}>Add Chemicals</IonButton>
         </IonModal>
-        </IonContent>
-      </IonPage>
-    );
-  };
-  
-  export default Delivery;
-  
+      </IonContent>
+    </IonPage>
+  );
+};
+
+export default Delivery;

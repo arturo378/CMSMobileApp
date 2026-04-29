@@ -23,10 +23,11 @@ import '@ionic/react/css/display.css';
 
 /* Theme variables */
 import './theme/variables.css';
-import { getCurrentUser } from './firebaseConfig'
+import { me } from './api/auth'
+import { getAccessToken, clearTokens } from './storage/tokens'
 import Dashboard from './pages/Dashboard';
 import { useDispatch } from 'react-redux';
-import {setUserState} from './redux/actions'
+import { setUserState } from './redux/actions'
 import ShippingPapers from './pages/ShippingPapers';
 import CloseShippingPaper from './pages/CloseShpping';
 import Delivery from './pages/Delivery';
@@ -56,16 +57,24 @@ const App: React.FC = () => {
 
 
   useEffect(() => {
-    getCurrentUser().then((user: any) => {
-      if(user) {
-        dispatch(setUserState(user.email))
+    (async () => {
+      const token = await getAccessToken()
+      if (!token) {
+        window.history.replaceState({}, '', '/login')
+        setBusy(false)
+        return
+      }
+      try {
+        const user = await me()
+        dispatch(setUserState(user))
         window.history.replaceState({}, '', '/dashboard')
-      }else{
+      } catch {
+        await clearTokens()
         window.history.replaceState({}, '', '/login')
       }
       setBusy(false)
-    })
-  }, [])
+    })()
+  }, [dispatch])
 
 
   return(

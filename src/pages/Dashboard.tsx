@@ -3,8 +3,9 @@ import React, { useState, useEffect } from 'react';
 
 import './Home.css';
 
-import { useSelector } from 'react-redux'
-import { logoutUser } from '../firebaseConfig'
+import { useSelector, useDispatch } from 'react-redux'
+import { logout as logoutUser } from '../api/auth'
+import { clearUserState } from '../redux/actions'
 import { useHistory } from 'react-router'
 import { Plugins } from '@capacitor/core';
 
@@ -13,6 +14,7 @@ const { Storage } = Plugins;
 
 const Dashboard: React.FC = () => {
     const username = useSelector((state: any) => state.user.username)
+    const dispatch = useDispatch()
     const history = useHistory()
     const [shipping, setShipping] = useState<string>();
 
@@ -33,6 +35,7 @@ const Dashboard: React.FC = () => {
 
     async function logout(){
         await logoutUser()
+        dispatch(clearUserState())
         history.replace('/login')
     }
 

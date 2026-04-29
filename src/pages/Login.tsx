@@ -1,12 +1,11 @@
 import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonInput, IonButton, IonLoading } from '@ionic/react';
-import React, { useState, useEffect } from 'react';
-import ExploreContainer from '../components/ExploreContainer';
+import React, { useState } from 'react';
 import './Home.css';
-import { loginUser } from '../firebaseConfig';
+import { login as loginUser } from '../api/auth';
 import { toast } from '../toast';
 import { setUserState } from '../redux/actions';
 import { useDispatch } from 'react-redux';
-import { Link, useHistory } from 'react-router-dom'
+import { useHistory } from 'react-router-dom'
 
 const Login: React.FC = () => {
     const [busy, setBusy] = useState<boolean>(false)
@@ -17,20 +16,17 @@ const Login: React.FC = () => {
 
 
     async function login(){
-
        setBusy(true)
-        const res: any = await loginUser(username, password)
-        
-        if(res) {
-            console.log(res)
-            
-                dispatch(setUserState((res.user).email))
-                history.replace('/dashboard')
-                toast('You have logged in!')
-            
-            
-
-        }setBusy(false)
+       try {
+           const res = await loginUser(username, password)
+           dispatch(setUserState(res.user))
+           history.replace('/dashboard')
+           toast('You have logged in!')
+       } catch (err) {
+           toast((err && (err as any).message) || 'Login failed')
+       } finally {
+           setBusy(false)
+       }
     }
 
 
