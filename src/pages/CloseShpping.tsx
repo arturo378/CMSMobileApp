@@ -16,7 +16,7 @@ import {
 } from '@ionic/react';
 import React, { useState, useEffect } from 'react';
 import { useHistory } from 'react-router';
-import { Plugins } from '@capacitor/core';
+import { Preferences } from '@capacitor/preferences';
 import {
   listByWarehouse,
   updateQuantity,
@@ -24,8 +24,6 @@ import {
 } from '../api/warehouseChemicals';
 import { updateShippingPaper } from '../api/shipping';
 import { toast } from '../toast';
-
-const { Storage } = Plugins;
 
 interface CachedChem {
   chemicalId: string;
@@ -61,12 +59,12 @@ const CloseShippingPaper: React.FC = () => {
   }
 
   async function deletedata() {
-    await Storage.clear();
+    await Preferences.clear();
     back();
   }
 
   async function getItem() {
-    const { value } = await Storage.get({ key: 'Shipping_paper' });
+    const { value } = await Preferences.get({ key: 'Shipping_paper' });
     if (!value) return;
     const info: CachedShippingPaper = JSON.parse(value);
     setPaperId(info.id);
@@ -102,7 +100,7 @@ const CloseShippingPaper: React.FC = () => {
       }
 
       await updateShippingPaper(paperId, { active: 1 });
-      await Storage.clear();
+      await Preferences.clear();
       back();
     } catch (err) {
       toast((err && (err as any).message) || 'Failed to close shipping paper');

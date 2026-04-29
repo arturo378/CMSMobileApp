@@ -1,4 +1,4 @@
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonInput, IonButton, IonLoading, IonItem, IonLabel, IonButtons } from '@ionic/react';
+import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonItem, IonLabel, IonButtons } from '@ionic/react';
 import React, { useState, useEffect } from 'react';
 
 import './Home.css';
@@ -7,9 +7,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import { logout as logoutUser } from '../api/auth'
 import { clearUserState } from '../redux/actions'
 import { useHistory } from 'react-router'
-import { Plugins } from '@capacitor/core';
-
-const { Storage } = Plugins;
+import { Preferences } from '@capacitor/preferences';
 
 
 const Dashboard: React.FC = () => {
@@ -23,7 +21,7 @@ const Dashboard: React.FC = () => {
    }, [])
 
     async function getItem() {
-      const { value } = await Storage.get({ key: 'Shipping_paper' });
+      const { value } = await Preferences.get({ key: 'Shipping_paper' });
       if(value){
         console.log(JSON.parse(value))
         setShipping(value)

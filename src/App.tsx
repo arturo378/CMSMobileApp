@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import { Redirect, Route } from 'react-router-dom';
-import { IonApp, IonRouterOutlet, IonSpinner } from '@ionic/react';
+import { IonApp, IonRouterOutlet, IonSpinner, setupIonicReact } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -23,6 +23,8 @@ import '@ionic/react/css/display.css';
 
 /* Theme variables */
 import './theme/variables.css';
+
+setupIonicReact();
 import { me } from './api/auth'
 import { getAccessToken, clearTokens } from './storage/tokens'
 import Dashboard from './pages/Dashboard';

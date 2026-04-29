@@ -44,10 +44,23 @@ const Login: React.FC = () => {
       </IonHeader>
      <IonLoading message="Please wait.." duration={0} isOpen={busy}></IonLoading>
       <IonContent className="ion-padding">
-          <IonInput placeholder="Username:" onIonChange={(e: any) => setUsername(e.target.value)} />
-          <IonInput type="password" placeholder="Password:" onIonChange={(e: any) => setPassword(e.target.value)} />
-          <IonButton onClick={login}>Login</IonButton>
-        
+          <IonInput
+            fill="outline"
+            label="Username"
+            labelPlacement="floating"
+            value={username}
+            onIonInput={(e) => setUsername(e.detail.value ?? '')}
+          />
+          <IonInput
+            fill="outline"
+            label="Password"
+            labelPlacement="floating"
+            type="password"
+            value={password}
+            onIonInput={(e) => setPassword(e.detail.value ?? '')}
+            className="ion-margin-top"
+          />
+          <IonButton expand="block" className="ion-margin-top" onClick={login}>Login</IonButton>
       </IonContent>
     </IonPage>
   );

@@ -22,15 +22,14 @@ import {
 import React, { useState, useEffect } from 'react';
 import { useHistory } from 'react-router';
 import { useSelector } from 'react-redux';
-import { Plugins } from '@capacitor/core';
+import { Geolocation } from '@capacitor/geolocation';
+import { Preferences } from '@capacitor/preferences';
 import { listCompanies } from '../api/companies';
 import { listLeases } from '../api/leases';
 import { listWells } from '../api/wells';
 import { createDelivery, addDeliveryChemical } from '../api/deliveries';
 import { Company, Lease, Well } from '../api/types';
 import { toast } from '../toast';
-
-const { Geolocation, Storage } = Plugins;
 
 interface CachedChem {
   chemicalId: string;
@@ -85,7 +84,7 @@ const Delivery: React.FC = () => {
   }
 
   async function loadCachedShipping() {
-    const { value } = await Storage.get({ key: 'Shipping_paper' });
+    const { value } = await Preferences.get({ key: 'Shipping_paper' });
     if (value) {
       const cached: CachedShippingPaper = JSON.parse(value);
       setChemicals(cached.chemicals);
@@ -93,7 +92,7 @@ const Delivery: React.FC = () => {
   }
 
   async function getCachedShipping(): Promise<CachedShippingPaper | null> {
-    const { value } = await Storage.get({ key: 'Shipping_paper' });
+    const { value } = await Preferences.get({ key: 'Shipping_paper' });
     return value ? JSON.parse(value) : null;
   }
 
@@ -164,7 +163,7 @@ const Delivery: React.FC = () => {
           return delivered ? { ...c, quantity: c.quantity - delivered.quantity } : c;
         });
         cached.chemicals = updated;
-        await Storage.set({ key: 'Shipping_paper', value: JSON.stringify(cached) });
+        await Preferences.set({ key: 'Shipping_paper', value: JSON.stringify(cached) });
       }
       history.replace('/dashboard');
     } catch (err) {
@@ -214,8 +213,7 @@ const Delivery: React.FC = () => {
           <IonRow>
             <IonList>
               <IonItem>
-                <IonLabel>Company:</IonLabel>
-                <IonSelect value={companyId} okText="Okay" cancelText="Dismiss" onIonChange={e => setCompanyId(e.detail.value)}>
+                <IonSelect label="Company" labelPlacement="stacked" value={companyId} onIonChange={e => setCompanyId(e.detail.value)}>
                   {companies.map((data) => (
                     <IonSelectOption key={data._id} value={data._id}>{data.name}</IonSelectOption>
                   ))}
@@ -223,8 +221,7 @@ const Delivery: React.FC = () => {
               </IonItem>
 
               <IonItem>
-                <IonLabel>Lease:</IonLabel>
-                <IonSelect value={leaseId} okText="Okay" cancelText="Dismiss" onIonChange={e => setLeaseId(e.detail.value)}>
+                <IonSelect label="Lease" labelPlacement="stacked" value={leaseId} onIonChange={e => setLeaseId(e.detail.value)}>
                   {leases.map((data) => (
                     <IonSelectOption key={data._id} value={data._id}>{data.name}</IonSelectOption>
                   ))}
@@ -232,8 +229,7 @@ const Delivery: React.FC = () => {
               </IonItem>
 
               <IonItem>
-                <IonLabel>Well:</IonLabel>
-                <IonSelect value={wellId} okText="Okay" cancelText="Dismiss" onIonChange={e => setWellId(e.detail.value)}>
+                <IonSelect label="Well" labelPlacement="stacked" value={wellId} onIonChange={e => setWellId(e.detail.value)}>
                   {wells.map((data) => (
                     <IonSelectOption key={data._id} value={data._id}>{data.name}</IonSelectOption>
                   ))}
@@ -241,7 +237,7 @@ const Delivery: React.FC = () => {
               </IonItem>
 
               <IonItem>
-                <IonInput value={comment} placeholder="Comments" onIonChange={e => setComment(e.detail.value!)}></IonInput>
+                <IonInput label="Comments" labelPlacement="stacked" value={comment} placeholder="Comments" onIonInput={e => setComment(e.detail.value!)}></IonInput>
               </IonItem>
             </IonList>
           </IonRow>
@@ -274,20 +270,20 @@ const Delivery: React.FC = () => {
           <IonButton color="primary" expand="full" onClick={submit}>Submit Deliveries</IonButton>
         </IonRow>
 
-        <IonModal isOpen={showModal} cssClass='my-custom-class'>
+        <IonModal isOpen={showModal} className='my-custom-class'>
           <IonGrid>
             <IonRow>
-              <IonLabel>Chemical:</IonLabel>
-              <IonSelect value={chemicalId} placeholder="Select One" onIonChange={e => setChemicalId(e.detail.value)}>
-                {chemicals.map((info) => (
-                  <IonSelectOption key={info.chemicalId} value={info.chemicalId}>{info.name}</IonSelectOption>
-                ))}
-              </IonSelect>
+              <IonItem>
+                <IonSelect label="Chemical" labelPlacement="stacked" value={chemicalId} placeholder="Select One" onIonChange={e => setChemicalId(e.detail.value)}>
+                  {chemicals.map((info) => (
+                    <IonSelectOption key={info.chemicalId} value={info.chemicalId}>{info.name}</IonSelectOption>
+                  ))}
+                </IonSelect>
+              </IonItem>
             </IonRow>
             <IonRow>
-              <IonLabel>Enter Gallons:</IonLabel>
               <IonItem>
-                <IonInput type="number" value={gallons} placeholder="Enter Number" onIonChange={e => setGallons(parseInt(e.detail.value!, 10))}></IonInput>
+                <IonInput label="Enter Gallons" labelPlacement="stacked" type="number" value={gallons} placeholder="Enter Number" onIonInput={e => setGallons(parseInt(e.detail.value!, 10))}></IonInput>
               </IonItem>
             </IonRow>
           </IonGrid>
