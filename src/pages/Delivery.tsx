@@ -6,19 +6,19 @@ import {
   IonToolbar,
   IonButton,
   IonButtons,
-  IonList,
   IonModal,
   IonItem,
   IonInput,
-  IonLabel,
   IonSelect,
-  IonGrid,
-  IonRow,
   IonSelectOption,
-  IonListHeader,
   IonFabButton,
-  IonItemSliding,
+  IonCard,
+  IonCardContent,
+  IonCardHeader,
+  IonCardTitle,
+  IonIcon,
 } from '@ionic/react';
+import { addOutline, flaskOutline, businessOutline, closeCircleOutline, chatbubbleOutline, arrowBackOutline, checkmarkOutline, locationOutline, waterOutline } from 'ionicons/icons';
 import React, { useState, useEffect } from 'react';
 import { useHistory } from 'react-router';
 import { useSelector } from 'react-redux';
@@ -203,92 +203,120 @@ const Delivery: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
+          <IonButtons slot="start">
+            <IonButton fill="clear" className="header-back-btn" onClick={back}>
+              <IonIcon slot="start" icon={arrowBackOutline} />
+              Dashboard
+            </IonButton>
+          </IonButtons>
           <IonTitle>Delivery</IonTitle>
-          <IonButtons onClick={back} slot="end">Back</IonButtons>
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding" fullscreen>
 
-        <IonGrid>
-          <IonRow>
-            <IonList>
-              <IonItem>
-                <IonSelect label="Company" labelPlacement="stacked" value={companyId} onIonChange={e => setCompanyId(e.detail.value)}>
-                  {companies.map((data) => (
-                    <IonSelectOption key={data._id} value={data._id}>{data.name}</IonSelectOption>
-                  ))}
-                </IonSelect>
-              </IonItem>
+        <p className="section-label">DELIVERY LOCATION</p>
+        <IonCard className="form-card">
+          <IonCardContent>
+            <IonItem lines="none">
+              <IonIcon slot="start" icon={businessOutline} color="primary" />
+              <IonSelect label="Company" labelPlacement="stacked" value={companyId} onIonChange={e => setCompanyId(e.detail.value)}>
+                {companies.map((data) => (
+                  <IonSelectOption key={data._id} value={data._id}>{data.name}</IonSelectOption>
+                ))}
+              </IonSelect>
+            </IonItem>
+            <IonItem lines="none">
+              <IonIcon slot="start" icon={locationOutline} color="primary" />
+              <IonSelect label="Lease" labelPlacement="stacked" value={leaseId} onIonChange={e => setLeaseId(e.detail.value)}>
+                {leases.map((data) => (
+                  <IonSelectOption key={data._id} value={data._id}>{data.name}</IonSelectOption>
+                ))}
+              </IonSelect>
+            </IonItem>
+            <IonItem lines="none">
+              <IonIcon slot="start" icon={waterOutline} color="secondary" />
+              <IonSelect label="Well" labelPlacement="stacked" value={wellId} onIonChange={e => setWellId(e.detail.value)}>
+                {wells.map((data) => (
+                  <IonSelectOption key={data._id} value={data._id}>{data.name}</IonSelectOption>
+                ))}
+              </IonSelect>
+            </IonItem>
+          </IonCardContent>
+        </IonCard>
 
-              <IonItem>
-                <IonSelect label="Lease" labelPlacement="stacked" value={leaseId} onIonChange={e => setLeaseId(e.detail.value)}>
-                  {leases.map((data) => (
-                    <IonSelectOption key={data._id} value={data._id}>{data.name}</IonSelectOption>
-                  ))}
-                </IonSelect>
-              </IonItem>
+        <p className="section-label">NOTES</p>
+        <IonCard className="form-card">
+          <IonCardContent>
+            <IonItem lines="none">
+              <IonIcon slot="start" icon={chatbubbleOutline} color="medium" />
+              <IonInput label="Comments" labelPlacement="stacked" value={comment} placeholder="Comments" onIonInput={e => setComment(e.detail.value!)} />
+            </IonItem>
+          </IonCardContent>
+        </IonCard>
 
-              <IonItem>
-                <IonSelect label="Well" labelPlacement="stacked" value={wellId} onIonChange={e => setWellId(e.detail.value)}>
-                  {wells.map((data) => (
-                    <IonSelectOption key={data._id} value={data._id}>{data.name}</IonSelectOption>
-                  ))}
-                </IonSelect>
-              </IonItem>
+        <p className="section-label">CHEMICALS TO DELIVER</p>
+        <IonCard className="form-card">
+          <IonCardHeader style={{ paddingBottom: '4px' }}>
+            <IonCardTitle style={{ fontSize: '0.9rem' }}>Delivery Chemicals</IonCardTitle>
+          </IonCardHeader>
+          <IonCardContent>
+            <div className="chem-scroll-area">
+              {delverychems.length === 0 ? (
+                <p className="chem-empty">No chemicals added yet</p>
+              ) : (
+                delverychems.map((info, index) => (
+                  <div className="chem-row" key={`${info.chemicalId}-${index}`}>
+                    <span className="chem-row-name">
+                      <IonIcon icon={flaskOutline} />
+                      {info.name}
+                    </span>
+                    <div className="chem-row-actions">
+                      <span className="chem-row-qty">{info.quantity} gal</span>
+                      <IonIcon
+                        className="chem-row-remove"
+                        icon={closeCircleOutline}
+                        onClick={e => removechemical(info, index)}
+                      />
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            <div className="fab-row">
+              <IonFabButton size="small" color="secondary" onClick={addchemical}>
+                <IonIcon icon={addOutline} />
+              </IonFabButton>
+              <span className="fab-row-label">Add Chemical</span>
+            </div>
+          </IonCardContent>
+        </IonCard>
 
-              <IonItem>
-                <IonInput label="Comments" labelPlacement="stacked" value={comment} placeholder="Comments" onIonInput={e => setComment(e.detail.value!)}></IonInput>
-              </IonItem>
-            </IonList>
-          </IonRow>
-        </IonGrid>
-
-        <IonRow>
-          <IonContent
-            style={{ height: '15em' }}
-            className="ion-padding"
-            scrollEvents={true}
-            onIonScrollStart={() => { }}
-            onIonScroll={() => { }}
-            onIonScrollEnd={() => { }}>
-            <IonListHeader>Chemicals</IonListHeader>
-            <IonList>
-              {delverychems.map((info, index) => (
-                <IonItemSliding key={`${info.chemicalId}-${index}`}>
-                  <IonItem type='button' onClick={e => removechemical(info, index)}>
-                    <IonLabel>{info.name}:  {info.quantity}</IonLabel>
-                  </IonItem>
-                </IonItemSliding>
-              ))}
-            </IonList>
-          </IonContent>
-        </IonRow>
-        <IonRow>
-          <IonFabButton size="small" color="danger" onClick={addchemical}>+</IonFabButton>
-        </IonRow>
-        <IonRow>
-          <IonButton color="primary" expand="full" onClick={submit}>Submit Deliveries</IonButton>
-        </IonRow>
+        <IonButton expand="block" color="primary" className="submit-btn" onClick={submit}>
+          <IonIcon slot="start" icon={checkmarkOutline} />
+          Submit Delivery
+        </IonButton>
 
         <IonModal isOpen={showModal} className='my-custom-class'>
-          <IonGrid>
-            <IonRow>
-              <IonItem>
-                <IonSelect label="Chemical" labelPlacement="stacked" value={chemicalId} placeholder="Select One" onIonChange={e => setChemicalId(e.detail.value)}>
-                  {chemicals.map((info) => (
-                    <IonSelectOption key={info.chemicalId} value={info.chemicalId}>{info.name}</IonSelectOption>
-                  ))}
-                </IonSelect>
-              </IonItem>
-            </IonRow>
-            <IonRow>
-              <IonItem>
-                <IonInput label="Enter Gallons" labelPlacement="stacked" type="number" value={gallons} placeholder="Enter Number" onIonInput={e => setGallons(parseInt(e.detail.value!, 10))}></IonInput>
-              </IonItem>
-            </IonRow>
-          </IonGrid>
-          <IonButton onClick={addchem}>Add Chemicals</IonButton>
+          <div className="modal-inner">
+            <p className="modal-title">Add Chemical</p>
+            <IonItem lines="full">
+              <IonSelect label="Chemical" labelPlacement="stacked" value={chemicalId} placeholder="Select One" onIonChange={e => setChemicalId(e.detail.value)}>
+                {chemicals.map((info) => (
+                  <IonSelectOption key={info.chemicalId} value={info.chemicalId}>{info.name}</IonSelectOption>
+                ))}
+              </IonSelect>
+            </IonItem>
+            <IonItem lines="full">
+              <IonInput label="Gallons" labelPlacement="stacked" type="number" value={gallons} placeholder="Enter Number" onIonInput={e => setGallons(parseInt(e.detail.value!, 10))} />
+            </IonItem>
+            <IonButton expand="block" color="secondary" onClick={addchem}>
+              <IonIcon slot="start" icon={addOutline} />
+              Add to List
+            </IonButton>
+            <IonButton expand="block" fill="clear" color="medium" onClick={() => setShowModal(false)}>Cancel</IonButton>
+          </div>
         </IonModal>
+
       </IonContent>
     </IonPage>
   );

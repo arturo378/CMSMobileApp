@@ -1,4 +1,5 @@
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonItem, IonLabel, IonButtons } from '@ionic/react';
+import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonButtons, IonButton, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonIcon } from '@ionic/react';
+import { carOutline, documentTextOutline, checkmarkCircleOutline, logOutOutline, personCircleOutline } from 'ionicons/icons';
 import React, { useState, useEffect } from 'react';
 
 import './Home.css';
@@ -26,8 +27,6 @@ const Dashboard: React.FC = () => {
         console.log(JSON.parse(value))
         setShipping(value)
       }
-      
-      
     }
 
 
@@ -37,63 +36,86 @@ const Dashboard: React.FC = () => {
         history.replace('/login')
     }
 
-     function shippingPapers(){
-        
+    function shippingPapers(){
         history.replace('/shippingpapers')
     }
     function closeShipping(){
-        
-      history.replace('/closeshipping')
-  }function delivery(){
-        
-    history.replace('/delivery')
-}
- 
+        history.replace('/closeshipping')
+    }
+    function delivery(){
+        history.replace('/delivery')
+    }
 
 
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Home</IonTitle>
-          <IonButtons slot="end"  onClick = {logout}>Logout</IonButtons>
+          <IonTitle>Dashboard</IonTitle>
+          <IonButtons slot="end">
+            <IonButton fill="clear" className="logout-btn" onClick={logout}>
+              <IonIcon slot="start" icon={logOutOutline} />
+              Logout
+            </IonButton>
+          </IonButtons>
         </IonToolbar>
       </IonHeader>
-     
+
       <IonContent className="ion-padding">
+        <IonCard className="form-card">
+          <IonCardHeader className="ion-text-center">
+            <IonIcon icon={personCircleOutline} style={{ fontSize: '40px', color: 'var(--ion-color-primary)' }} />
+            <IonCardTitle>Welcome, {username}</IonCardTitle>
+          </IonCardHeader>
+          <IonCardContent>
+            <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--app-section-label-color)' }}>
+              Select an action below to continue.
+            </p>
+          </IonCardContent>
+        </IonCard>
 
-      {(function() {
-          if (shipping) {
-            return (
-              <div>
-              <IonItem button onClick={delivery}>
-            <IonLabel>
-              Delivery
-            </IonLabel>
-            </IonItem>
-              <IonItem button onClick={closeShipping}>
-            <IonLabel>
-              Close Shipping Paper
-            </IonLabel>
-            </IonItem>
-            </div>
-            )}else{
-              return(
-           
-            <IonItem button onClick={shippingPapers}>
-            <IonLabel>
-              Shipping Papers
-            </IonLabel>
-            </IonItem>
-            )}
-        })()}
-            
-    
-
-  
-  
-    
-        
+        {shipping ? (
+          <>
+            <p className="section-label">ACTIVE SHIPMENT</p>
+            <IonCard className="form-card" button onClick={delivery}>
+              <IonCardContent>
+                <div className="action-card-row">
+                  <IonIcon icon={carOutline} style={{ fontSize: '30px', color: 'var(--ion-color-secondary)', flexShrink: 0 }} />
+                  <div className="action-card-info">
+                    <h3>Delivery</h3>
+                    <p>Record a field delivery</p>
+                  </div>
+                </div>
+              </IonCardContent>
+            </IonCard>
+            <IonCard className="form-card" button onClick={closeShipping}>
+              <IonCardContent>
+                <div className="action-card-row">
+                  <IonIcon icon={checkmarkCircleOutline} style={{ fontSize: '30px', color: 'var(--ion-color-tertiary)', flexShrink: 0 }} />
+                  <div className="action-card-info">
+                    <h3>Close Shipping Paper</h3>
+                    <p>Finalize and close the active shipment</p>
+                  </div>
+                </div>
+              </IonCardContent>
+            </IonCard>
+          </>
+        ) : (
+          <>
+            <p className="section-label">GET STARTED</p>
+            <IonCard className="form-card" button onClick={shippingPapers}>
+              <IonCardContent>
+                <div className="action-card-row">
+                  <IonIcon icon={documentTextOutline} style={{ fontSize: '30px', color: 'var(--ion-color-primary)', flexShrink: 0 }} />
+                  <div className="action-card-info">
+                    <h3>Shipping Papers</h3>
+                    <p>Create a new shipping paper</p>
+                  </div>
+                </div>
+              </IonCardContent>
+            </IonCard>
+          </>
+        )}
       </IonContent>
     </IonPage>
   );

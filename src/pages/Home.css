@@ -1,0 +1,17 @@
+.action-card-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.action-card-info h3 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.action-card-info p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--app-section-label-color);
+}

@@ -1,0 +1,25 @@
+.login-brand-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 0 24px;
+  gap: 8px;
+}
+
+.login-brand-block ion-icon {
+  font-size: 56px;
+  color: var(--ion-color-secondary);
+}
+
+.login-brand-block h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--ion-text-color);
+  margin: 0;
+}
+
+.login-brand-block p {
+  font-size: 0.9rem;
+  color: var(--app-section-label-color);
+  margin: 0;
+}

@@ -1,6 +1,7 @@
-import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonInput, IonButton, IonLoading } from '@ionic/react';
+import { IonContent, IonHeader, IonPage, IonTitle, IonToolbar, IonInput, IonButton, IonLoading, IonCard, IonCardContent, IonIcon } from '@ionic/react';
+import { flaskOutline } from 'ionicons/icons';
 import React, { useState } from 'react';
-import './Home.css';
+import './Login.css';
 import { login as loginUser } from '../api/auth';
 import { toast } from '../toast';
 import { setUserState } from '../redux/actions';
@@ -30,37 +31,41 @@ const Login: React.FC = () => {
     }
 
 
-  
-
-
-
-
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Login Page</IonTitle>
+          <IonTitle>CMS Logistics</IonTitle>
         </IonToolbar>
       </IonHeader>
-     <IonLoading message="Please wait.." duration={0} isOpen={busy}></IonLoading>
+      <IonLoading message="Please wait.." duration={0} isOpen={busy}></IonLoading>
       <IonContent className="ion-padding">
-          <IonInput
-            fill="outline"
-            label="Username"
-            labelPlacement="floating"
-            value={username}
-            onIonInput={(e) => setUsername(e.detail.value ?? '')}
-          />
-          <IonInput
-            fill="outline"
-            label="Password"
-            labelPlacement="floating"
-            type="password"
-            value={password}
-            onIonInput={(e) => setPassword(e.detail.value ?? '')}
-            className="ion-margin-top"
-          />
-          <IonButton expand="block" className="ion-margin-top" onClick={login}>Login</IonButton>
+        <div className="login-brand-block">
+          <IonIcon icon={flaskOutline} />
+          <h2>Chemical Management</h2>
+          <p>Sign in to continue</p>
+        </div>
+        <IonCard className="form-card">
+          <IonCardContent>
+            <IonInput
+              fill="outline"
+              label="Username"
+              labelPlacement="floating"
+              value={username}
+              onIonInput={(e) => setUsername(e.detail.value ?? '')}
+            />
+            <IonInput
+              fill="outline"
+              label="Password"
+              labelPlacement="floating"
+              type="password"
+              value={password}
+              onIonInput={(e) => setPassword(e.detail.value ?? '')}
+              className="ion-margin-top"
+            />
+            <IonButton expand="block" color="secondary" className="ion-margin-top submit-btn" onClick={login}>Sign In</IonButton>
+          </IonCardContent>
+        </IonCard>
       </IonContent>
     </IonPage>
   );

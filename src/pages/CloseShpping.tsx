@@ -6,14 +6,15 @@ import {
   IonToolbar,
   IonButton,
   IonButtons,
-  IonList,
   IonItem,
   IonLabel,
-  IonGrid,
-  IonRow,
-  IonListHeader,
-  IonItemSliding,
+  IonCard,
+  IonCardContent,
+  IonCardHeader,
+  IonCardTitle,
+  IonIcon,
 } from '@ionic/react';
+import { documentTextOutline, arrowBackOutline, businessOutline, flaskOutline, checkmarkCircleOutline, warningOutline } from 'ionicons/icons';
 import React, { useState, useEffect } from 'react';
 import { useHistory } from 'react-router';
 import { Preferences } from '@capacitor/preferences';
@@ -111,44 +112,72 @@ const CloseShippingPaper: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Close Shipping Paper</IonTitle>
-          <IonButtons onClick={back} slot="end">Back</IonButtons>
+          <IonButtons slot="start">
+            <IonButton fill="clear" className="header-back-btn" onClick={back}>
+              <IonIcon slot="start" icon={arrowBackOutline} />
+              Dashboard
+            </IonButton>
+          </IonButtons>
+          <IonTitle>Close Shipment</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent className="ion-padding">
 
-        <IonGrid>
-          <IonRow>
-            <IonList>
-              <IonItem><IonLabel>Data ID:  {dataNumber}</IonLabel></IonItem>
-              <IonItem><IonLabel>Origin Warehouse: {origin}</IonLabel></IonItem>
-              <IonItem><IonLabel>Destination Warehouse: {destination}</IonLabel></IonItem>
-            </IonList>
-          </IonRow>
+        <IonCard className="form-card">
+          <IonCardHeader>
+            <IonIcon icon={documentTextOutline} style={{ fontSize: '28px', color: 'var(--ion-color-primary)' }} />
+            <IonCardTitle>Shipping Paper #{dataNumber}</IonCardTitle>
+          </IonCardHeader>
+          <IonCardContent>
+            <IonItem lines="none">
+              <IonIcon slot="start" icon={businessOutline} color="medium" />
+              <IonLabel>
+                <p style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--app-section-label-color)' }}>Origin</p>
+                <h3 style={{ fontWeight: 600 }}>{origin}</h3>
+              </IonLabel>
+            </IonItem>
+            <IonItem lines="none">
+              <IonIcon slot="start" icon={businessOutline} color="secondary" />
+              <IonLabel>
+                <p style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--app-section-label-color)' }}>Destination</p>
+                <h3 style={{ fontWeight: 600 }}>{destination}</h3>
+              </IonLabel>
+            </IonItem>
+          </IonCardContent>
+        </IonCard>
 
-          <IonRow>
-            <IonContent
-              style={{ height: '15em' }}
-              className="ion-padding"
-              scrollEvents={true}
-              onIonScrollStart={() => { }}
-              onIonScroll={() => { }}
-              onIonScrollEnd={() => { }}>
-              <IonListHeader>Chemicals</IonListHeader>
-              <IonList>
-                {chem_list.map((info, index) => (
-                  <IonItemSliding key={`${info.chemicalId}-${index}`}>
-                    <IonLabel>{info.name}:  {info.quantity}</IonLabel>
-                  </IonItemSliding>
-                ))}
-              </IonList>
-            </IonContent>
-          </IonRow>
-          <IonRow>
-            <IonButton color="primary" expand="full" onClick={submit}>Close Shipping Paper</IonButton>
-            <IonButton color="danger" expand="full" onClick={deletedata}>Clear Data</IonButton>
-          </IonRow>
-        </IonGrid>
+        <p className="section-label">CHEMICALS ON BOARD</p>
+        <IonCard className="form-card">
+          <IonCardContent>
+            <div className="chem-scroll-area">
+              {chem_list.length === 0 ? (
+                <p className="chem-empty">No chemicals on board</p>
+              ) : (
+                chem_list.map((info, index) => (
+                  <div className="chem-row" key={`${info.chemicalId}-${index}`}>
+                    <span className="chem-row-name">
+                      <IonIcon icon={flaskOutline} />
+                      {info.name}
+                    </span>
+                    <span className="chem-row-qty">{info.quantity} gal</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </IonCardContent>
+        </IonCard>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
+          <IonButton expand="block" color="primary" onClick={submit}>
+            <IonIcon slot="start" icon={checkmarkCircleOutline} />
+            Close Shipping Paper
+          </IonButton>
+          <IonButton expand="block" color="danger" fill="outline" onClick={deletedata}>
+            <IonIcon slot="start" icon={warningOutline} />
+            Clear All Data
+          </IonButton>
+        </div>
+
       </IonContent>
     </IonPage>
   );
